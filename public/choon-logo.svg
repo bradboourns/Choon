@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-labelledby="title desc">
+  <title id="title">Choon logo</title>
+  <desc id="desc">A cyan location pin with a yellow music note above purple raised hands.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#06070d" />
+      <stop offset="100%" stop-color="#0a0d17" />
+    </linearGradient>
+    <linearGradient id="pin" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#32e5ee" />
+      <stop offset="100%" stop-color="#1cbdd3" />
+    </linearGradient>
+    <linearGradient id="hands" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7a35ea" />
+      <stop offset="100%" stop-color="#c531ef" />
+    </linearGradient>
+  </defs>
+
+  <rect width="640" height="640" fill="url(#bg)" />
+
+  <path fill="url(#pin)" d="M320 78c-94 0-170 76-170 170 0 50 22 98 62 131l97 128a14 14 0 0 0 22 0l97-128c40-33 62-81 62-131 0-94-76-170-170-170Zm0 93c42 0 76 34 76 76s-34 76-76 76-76-34-76-76 34-76 76-76Z" />
+  <circle cx="320" cy="247" r="70" fill="#090b12" />
+  <path fill="#f7df1e" d="M308 202v63c-6-4-13-7-22-7-22 0-39 15-39 34s17 34 39 34 39-15 39-34v-71c15 2 27 13 27 27a9 9 0 1 0 18 0c0-27-22-49-49-49h-13Z" />
+
+  <g fill="url(#hands)">
+    <path d="M95 457h51l31-85c6-16 29-18 37-2l11 24a12 12 0 0 0 22-2l19-64a20 20 0 0 0-37-12l-10 34-3-6c-16-31-58-27-69 6l-37 107H95a11 11 0 1 0 0 22Z" />
+    <path d="M545 457h-51l-31-85c-6-16-29-18-37-2l-11 24a12 12 0 0 1-22-2l-19-64a20 20 0 0 1 37-12l10 34 3-6c16-31 58-27 69 6l37 107h15a11 11 0 1 1 0 22Z" />
+    <rect x="96" y="531" width="448" height="28" rx="10" />
+  </g>
+</svg>
