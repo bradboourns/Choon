@@ -15,7 +15,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <header className="sticky top-0 z-10 border-b border-zinc-800 bg-zinc-950/90 backdrop-blur">
           <nav className="mx-auto flex max-w-6xl items-center justify-between p-4">
             <Link href="/" className="flex items-center gap-2">
-              <Image src="/choon-logo.svg" alt="Choon" width={132} height={40} priority className="h-10 w-auto" />
+              <Image src="/choon-logo.svg" alt="Choon" width={48} height={48} priority className="h-12 w-12" />
             </Link>
             <div className="flex gap-3 text-sm">
               <Link href="/create-gig">Post gig</Link>

@@ -19,7 +19,15 @@
 - Admin moderation dashboard (approve/hide gigs + reports view)
 - Seeded venues and gigs for instant demo
 
-## Local development
+## Local launch (single file, no CLI)
+- Double-click **`Launch Choon.bat`**.
+- The launcher will:
+  - check Node.js is installed,
+  - install dependencies on first run,
+  - create `.env.local` if missing,
+  - open `http://localhost:3000`, and start the app.
+
+## Local development (CLI optional)
 ```bash
 npm install
 npm run dev
