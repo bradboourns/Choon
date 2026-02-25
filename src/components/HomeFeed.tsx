@@ -15,7 +15,9 @@ type Gig = {
   city: string;
   date: string;
   start_time: string;
+  end_time: string;
   price_type: string;
+  ticket_price: number | null;
   genres: string;
   vibe_tags: string;
   lat: number;
@@ -34,6 +36,7 @@ function distanceKm(a: { lat: number; lng: number }, b: { lat: number; lng: numb
 
 const dateTabs = [
   { key: 'all', label: 'All Dates' },
+  { key: 'live', label: 'Live now' },
   { key: 'tonight', label: 'Tonight' },
   { key: 'tomorrow', label: 'Tomorrow' },
   { key: 'weekend', label: 'This Weekend' },
@@ -44,6 +47,10 @@ function parseLocalDate(value: string) {
   return new Date(`${value}T00:00:00`);
 }
 
+function parseDateTime(date: string, time: string) {
+  return new Date(`${date}T${time || '00:00'}`);
+}
+
 export default function HomeFeed({ initial }: { initial: Gig[] }) {
   const [tab, setTab] = useState<'list' | 'map'>('list');
   const [search, setSearch] = useState('');
@@ -51,6 +58,7 @@ export default function HomeFeed({ initial }: { initial: Gig[] }) {
   const [dateRange, setDateRange] = useState<(typeof dateTabs)[number]['key']>('next7');
   const [loc, setLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [mapCenter, setMapCenter] = useState(defaultMapCenter);
+  const [distanceRangeKm, setDistanceRangeKm] = useState(10);
 
   const today = useMemo(() => {
     const now = new Date();
@@ -65,6 +73,7 @@ export default function HomeFeed({ initial }: { initial: Gig[] }) {
         const matchesPrice = !price || g.price_type === price;
 
         const gigDate = parseLocalDate(g.date);
+        const now = new Date();
         const tomorrow = new Date(today);
         tomorrow.setDate(today.getDate() + 1);
         const nextWeek = new Date(today);
@@ -73,15 +82,24 @@ export default function HomeFeed({ initial }: { initial: Gig[] }) {
         const day = gigDate.getDay();
         const isWeekend = day === 5 || day === 6;
 
+        const startsAt = parseDateTime(g.date, g.start_time);
+        const endsAt = g.end_time ? parseDateTime(g.date, g.end_time) : new Date(startsAt.getTime() + 3 * 60 * 60 * 1000);
+        const isLiveNow = now >= startsAt && now <= endsAt;
+
         let matchesDate = true;
+        if (dateRange === 'live') matchesDate = isLiveNow;
         if (dateRange === 'tonight') matchesDate = gigDate.getTime() === today.getTime();
         if (dateRange === 'tomorrow') matchesDate = gigDate.getTime() === tomorrow.getTime();
         if (dateRange === 'weekend') matchesDate = isWeekend && gigDate >= today;
         if (dateRange === 'next7') matchesDate = gigDate >= today && gigDate <= nextWeek;
 
-        return matchesSearch && matchesPrice && matchesDate;
+        const rangeOrigin = loc || mapCenter;
+        const distance = Number(distanceKm(rangeOrigin, { lat: g.lat, lng: g.lng }));
+        const matchesDistance = dateRange !== 'live' || distance <= distanceRangeKm;
+
+        return matchesSearch && matchesPrice && matchesDate && matchesDistance;
       }),
-    [initial, search, price, dateRange, today],
+    [initial, search, price, dateRange, today, loc, mapCenter, distanceRangeKm],
   );
 
   return (
@@ -141,7 +159,20 @@ export default function HomeFeed({ initial }: { initial: Gig[] }) {
             <option value="Ticketed">🎫 Ticketed</option>
           </select>
           <span className="rounded-full border border-zinc-700 bg-zinc-900/70 px-4 py-2 text-sm text-zinc-300">✨ Vibe</span>
-          <span className="rounded-full border border-zinc-700 bg-zinc-900/70 px-4 py-2 text-sm text-zinc-300">📍 Distance</span>
+          {dateRange === 'live' && (
+            <label className="flex items-center gap-2 rounded-full border border-zinc-700 bg-zinc-900/70 px-4 py-2 text-sm text-zinc-300">
+              📍 Range
+              <select
+                className="rounded bg-zinc-800 px-2 py-1"
+                value={distanceRangeKm}
+                onChange={(e) => setDistanceRangeKm(Number(e.target.value))}
+              >
+                {[5, 10, 15, 20, 30, 50].map((km) => (
+                  <option key={km} value={km}>{km} km</option>
+                ))}
+              </select>
+            </label>
+          )}
         </div>
       </section>
 
@@ -180,7 +211,7 @@ export default function HomeFeed({ initial }: { initial: Gig[] }) {
                 <div className="relative h-40 border-b border-zinc-800 bg-gradient-to-br from-violet-950/70 via-zinc-900 to-fuchsia-950/50 p-4">
                   <span className="rounded-lg bg-black/45 px-2.5 py-1 text-xs font-semibold text-zinc-200">{g.date}</span>
                   <span className="absolute bottom-4 right-4 rounded-lg border border-violet-400/40 bg-violet-600/30 px-2.5 py-1 text-xs font-semibold text-violet-100">
-                    {g.price_type === 'Door' ? '🚪 At door' : g.price_type === 'Free' ? '🟢 Free' : '🎫 Tickets'}
+                    {g.price_type === 'Door' ? `🚪 $${(g.ticket_price ?? 0).toFixed(2)} at door` : g.price_type === 'Free' ? '🟢 Free' : `🎫 From $${(g.ticket_price ?? 0).toFixed(2)}`}
                   </span>
                 </div>
                 <div className="space-y-2 p-4">

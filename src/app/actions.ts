@@ -43,14 +43,15 @@ export async function createGigAction(formData: FormData) {
 
   const genres = formData.getAll('genres');
   const vibes = formData.getAll('vibe_tags');
-  db.prepare(`INSERT INTO gigs (venue_id,artist_name,date,start_time,end_time,price_type,ticket_url,description,genres,vibe_tags,poster_url,status,needs_review,created_by_user_id)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+  db.prepare(`INSERT INTO gigs (venue_id,artist_name,date,start_time,end_time,price_type,ticket_price,ticket_url,description,genres,vibe_tags,poster_url,status,needs_review,created_by_user_id)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
     venueId,
     String(formData.get('artist_name')),
     String(formData.get('date')),
     String(formData.get('start_time')),
     String(formData.get('end_time') || ''),
     String(formData.get('price_type')),
+    Number(formData.get('ticket_price') || 0),
     String(formData.get('ticket_url') || ''),
     String(formData.get('description') || ''),
     JSON.stringify(genres),
@@ -84,7 +85,7 @@ export async function requestVenueAction(formData: FormData) {
     'pending',
   );
 
-  redirect('/create-gig?request=sent');
+  redirect('/request-venue?request=sent');
 }
 
 export async function updateGigAction(formData: FormData) {
