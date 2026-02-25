@@ -86,6 +86,7 @@ CREATE TABLE IF NOT EXISTS gigs (
   start_time TEXT NOT NULL,
   end_time TEXT,
   price_type TEXT NOT NULL,
+  ticket_price REAL,
   ticket_url TEXT,
   description TEXT,
   genres TEXT NOT NULL,
@@ -133,6 +134,9 @@ if (!venueColumns.some((column) => column.name === 'abn')) {
 const gigColumns = db.prepare('PRAGMA table_info(gigs)').all() as Array<{ name: string }>;
 if (!gigColumns.some((column) => column.name === 'needs_review')) {
   db.exec('ALTER TABLE gigs ADD COLUMN needs_review INTEGER NOT NULL DEFAULT 1');
+}
+if (!gigColumns.some((column) => column.name === 'ticket_price')) {
+  db.exec('ALTER TABLE gigs ADD COLUMN ticket_price REAL');
 }
 
 const standardAccounts = [
@@ -216,11 +220,11 @@ if (gigCount.count === 0) {
   const fallbackCreator =
     (db.prepare("SELECT id FROM users WHERE username = 'admin'").get() as { id: number } | undefined)?.id || 1;
   db.exec(`
-  INSERT INTO gigs (venue_id,artist_name,date,start_time,price_type,ticket_url,description,genres,vibe_tags,status,needs_review,created_by_user_id,poster_url)
+  INSERT INTO gigs (venue_id,artist_name,date,start_time,price_type,ticket_price,ticket_url,description,genres,vibe_tags,status,needs_review,created_by_user_id,poster_url)
   VALUES
-  (1,'Neon Koala','${new Date().toISOString().slice(0,10)}','19:30','Ticketed','https://example.com/tickets','Indie dance with synth hooks.','["Indie","Electronic"]','["Loud","Sweaty"]','approved',0,${fallbackCreator},'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1200'),
-  (2,'The Yard Dogs','${new Date(Date.now()+86400000).toISOString().slice(0,10)}','20:00','Door',NULL,'Garage rock all night.','["Rock","Garage"]','["Raw","Noisy"]','approved',0,${fallbackCreator},'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=1200'),
-  (3,'Mina Vale','${new Date(Date.now()+2*86400000).toISOString().slice(0,10)}','18:30','Free',NULL,'Soulful sunset set.','["Soul","Pop"]','["Chill","Date night"]','approved',0,${fallbackCreator},'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1200');
+  (1,'Neon Koala','${new Date().toISOString().slice(0,10)}','19:30','Ticketed',32.00,'https://example.com/tickets','Indie dance with synth hooks.','["Indie","Electronic"]','["Loud","Sweaty"]','approved',0,${fallbackCreator},'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1200'),
+  (2,'The Yard Dogs','${new Date(Date.now()+86400000).toISOString().slice(0,10)}','20:00','Door',20.00,NULL,'Garage rock all night.','["Rock","Garage"]','["Raw","Noisy"]','approved',0,${fallbackCreator},'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=1200'),
+  (3,'Mina Vale','${new Date(Date.now()+2*86400000).toISOString().slice(0,10)}','18:30','Free',0,NULL,'Soulful sunset set.','["Soul","Pop"]','["Chill","Date night"]','approved',0,${fallbackCreator},'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1200');
   `);
 }
 

@@ -34,6 +34,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
                     <Link href="/analytics" className="block rounded-lg px-3 py-2 text-left hover:bg-zinc-800">Analytics</Link>
                     <Link href="/settings" className="block rounded-lg px-3 py-2 text-left hover:bg-zinc-800">Settings</Link>
                     {canPostGig && <Link href="/create-gig" className="block rounded-lg px-3 py-2 text-left hover:bg-zinc-800">Post gig</Link>}
+                    {session?.role === 'venue_admin' && <Link href="/request-venue" className="block rounded-lg px-3 py-2 text-left hover:bg-zinc-800">Request venue</Link>}
                     <form action={logoutAction}>
                       <button className="w-full rounded-lg px-3 py-2 text-left hover:bg-zinc-800">Log out</button>
                     </form>
