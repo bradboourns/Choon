@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
+import { formatDateDDMMYYYY, formatTime } from '@/lib/format';
 
 const GigMap = dynamic(() => import('./GigMap'), { ssr: false });
 const defaultMapCenter = { lat: -28.0167, lng: 153.4 };
@@ -209,7 +210,7 @@ export default function HomeFeed({ initial }: { initial: Gig[] }) {
                 className="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900/50 transition hover:-translate-y-0.5 hover:border-violet-500/50 hover:shadow-xl hover:shadow-violet-900/20"
               >
                 <div className="relative h-40 border-b border-zinc-800 bg-gradient-to-br from-violet-950/70 via-zinc-900 to-fuchsia-950/50 p-4">
-                  <span className="rounded-lg bg-black/45 px-2.5 py-1 text-xs font-semibold text-zinc-200">{g.date}</span>
+                  <span className="rounded-lg bg-black/45 px-2.5 py-1 text-xs font-semibold text-zinc-200">{formatDateDDMMYYYY(g.date)}</span>
                   <span className="absolute bottom-4 right-4 rounded-lg border border-violet-400/40 bg-violet-600/30 px-2.5 py-1 text-xs font-semibold text-violet-100">
                     {g.price_type === 'Door' ? `🚪 $${(g.ticket_price ?? 0).toFixed(2)} at door` : g.price_type === 'Free' ? '🟢 Free' : `🎫 From $${(g.ticket_price ?? 0).toFixed(2)}`}
                   </span>
@@ -217,7 +218,7 @@ export default function HomeFeed({ initial }: { initial: Gig[] }) {
                 <div className="space-y-2 p-4">
                   <p className="text-2xl font-bold leading-tight">{g.artist_name}</p>
                   <p className="text-zinc-300">📍 {g.venue_name} · {g.suburb}</p>
-                  <p className="text-zinc-400">🕒 {g.start_time}</p>
+                  <p className="text-zinc-400">🕒 {formatTime(g.start_time, '12h')}</p>
                   {loc && (
                     <p className="text-sm text-zinc-400">{distanceKm(loc, { lat: g.lat, lng: g.lng })} km away from you</p>
                   )}

@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS user_profiles (
   display_name TEXT NOT NULL,
   bio TEXT NOT NULL DEFAULT '',
   location TEXT NOT NULL DEFAULT '',
+  time_format TEXT NOT NULL DEFAULT '12h',
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -65,6 +66,7 @@ CREATE TABLE IF NOT EXISTS venue_requests (
   website TEXT,
   instagram TEXT,
   notes TEXT,
+  provisional_venue_id INTEGER,
   status TEXT NOT NULL DEFAULT 'pending',
   reviewed_by_user_id INTEGER,
   reviewed_at TEXT,
@@ -115,6 +117,14 @@ CREATE TABLE IF NOT EXISTS reports (
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   status TEXT NOT NULL DEFAULT 'open'
 );
+CREATE TABLE IF NOT EXISTS password_reset_requests (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER,
+  login_identifier TEXT NOT NULL,
+  note TEXT,
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 `);
 
 const userColumns = db.prepare('PRAGMA table_info(users)').all() as Array<{ name: string }>;
@@ -130,6 +140,16 @@ db.exec("UPDATE users SET username = COALESCE(username, email) WHERE username IS
 const venueColumns = db.prepare('PRAGMA table_info(venues)').all() as Array<{ name: string }>;
 if (!venueColumns.some((column) => column.name === 'abn')) {
   db.exec('ALTER TABLE venues ADD COLUMN abn TEXT');
+}
+
+const profileColumns = db.prepare('PRAGMA table_info(user_profiles)').all() as Array<{ name: string }>;
+if (!profileColumns.some((column) => column.name === 'time_format')) {
+  db.exec("ALTER TABLE user_profiles ADD COLUMN time_format TEXT NOT NULL DEFAULT '12h'");
+}
+
+const venueRequestColumns = db.prepare('PRAGMA table_info(venue_requests)').all() as Array<{ name: string }>;
+if (!venueRequestColumns.some((column) => column.name === 'provisional_venue_id')) {
+  db.exec('ALTER TABLE venue_requests ADD COLUMN provisional_venue_id INTEGER');
 }
 
 const gigColumns = db.prepare('PRAGMA table_info(gigs)').all() as Array<{ name: string }>;
@@ -149,6 +169,8 @@ const standardAccounts = [
   { username: 'fan', email: 'fan@choon.local', role: 'user', displayName: 'Fan Admin' },
   { username: 'artist', email: 'artist@choon.local', role: 'artist', displayName: 'Artist Admin' },
   { username: 'venue', email: 'venue@choon.local', role: 'venue_admin', displayName: 'Venue Admin' },
+  { username: 'bine', email: 'hello@bine.com.au', role: 'venue_admin', displayName: 'Bine Bar and Dining' },
+  { username: 'dendevine', email: 'bookings@dendevine.com.au', role: 'venue_admin', displayName: 'Den Devine' },
 ] as const;
 
 const existingUsers = db.prepare('SELECT username, role FROM users ORDER BY username').all() as Array<{ username: string; role: string }>;
@@ -193,6 +215,8 @@ const goldCoastVenues = [
   { name: 'Miami Marketta', abn: '11 111 111 111', address: '23 Hillcrest Parade', suburb: 'Miami', city: 'Gold Coast', state: 'QLD', postcode: '4220', lat: -28.0747, lng: 153.4438, website: 'https://www.miamimarketta.com', instagram: 'miamimarketta' },
   { name: 'Vinnie\'s Dive Bar', abn: '22 222 222 222', address: '44A Nerang St', suburb: 'Southport', city: 'Gold Coast', state: 'QLD', postcode: '4215', lat: -27.9697, lng: 153.4094, website: 'https://vinniesdivebar.com.au', instagram: 'vinniesdive' },
   { name: 'HOTA Outdoor Stage', abn: '33 333 333 333', address: '135 Bundall Rd', suburb: 'Surfers Paradise', city: 'Gold Coast', state: 'QLD', postcode: '4217', lat: -28.0032, lng: 153.4177, website: 'https://hota.com.au', instagram: 'hotagc' },
+  { name: 'Bine Bar and Dining', abn: '44 444 444 444', address: '1/28 Chairlift Ave', suburb: 'Mermaid Beach', city: 'Gold Coast', state: 'QLD', postcode: '4218', lat: -28.0446, lng: 153.4344, website: 'https://www.bine.com.au', instagram: 'binebardining' },
+  { name: 'Den Devine', abn: '55 555 555 555', address: 'Oracle Blvd', suburb: 'Broadbeach', city: 'Gold Coast', state: 'QLD', postcode: '4218', lat: -28.0307, lng: 153.4295, website: 'https://dendevine.com.au', instagram: 'dendevine' },
 ] as const;
 
 const existingVenues = db.prepare('SELECT name, city FROM venues ORDER BY name').all() as Array<{ name: string; city: string }>;
@@ -213,7 +237,9 @@ if (existingVenueSignature !== expectedVenueSignature) {
   INSERT INTO venues (name,abn,address,suburb,city,state,postcode,lat,lng,website,instagram,approved) VALUES
   ('Miami Marketta','11 111 111 111','23 Hillcrest Parade','Miami','Gold Coast','QLD','4220',-28.0747,153.4438,'https://www.miamimarketta.com','miamimarketta',1),
   ('Vinnie''s Dive Bar','22 222 222 222','44A Nerang St','Southport','Gold Coast','QLD','4215',-27.9697,153.4094,'https://vinniesdivebar.com.au','vinniesdive',1),
-  ('HOTA Outdoor Stage','33 333 333 333','135 Bundall Rd','Surfers Paradise','Gold Coast','QLD','4217',-28.0032,153.4177,'https://hota.com.au','hotagc',1);
+  ('HOTA Outdoor Stage','33 333 333 333','135 Bundall Rd','Surfers Paradise','Gold Coast','QLD','4217',-28.0032,153.4177,'https://hota.com.au','hotagc',1),
+  ('Bine Bar and Dining','44 444 444 444','1/28 Chairlift Ave','Mermaid Beach','Gold Coast','QLD','4218',-28.0446,153.4344,'https://www.bine.com.au','binebardining',1),
+  ('Den Devine','55 555 555 555','Oracle Blvd','Broadbeach','Gold Coast','QLD','4218',-28.0307,153.4295,'https://dendevine.com.au','dendevine',1);
 
   INSERT INTO venue_memberships (venue_id,user_id,role,approved)
   SELECT venues.id, ${fallbackCreator}, 'owner', 1 FROM venues;
@@ -228,6 +254,19 @@ if (venueMasterAccount) {
   INSERT OR IGNORE INTO venue_memberships (venue_id,user_id,role,approved)
   SELECT id, ${venueMasterAccount.id}, 'owner', 1 FROM venues WHERE approved=1;
   `);
+}
+
+
+const bineAccount = db.prepare("SELECT id FROM users WHERE username = 'bine' LIMIT 1").get() as { id: number } | undefined;
+if (bineAccount) {
+  db.prepare(`INSERT OR IGNORE INTO venue_memberships (venue_id,user_id,role,approved)
+    SELECT id, ?, 'owner', 1 FROM venues WHERE name='Bine Bar and Dining'`).run(bineAccount.id);
+}
+
+const denDevineAccount = db.prepare("SELECT id FROM users WHERE username = 'dendevine' LIMIT 1").get() as { id: number } | undefined;
+if (denDevineAccount) {
+  db.prepare(`INSERT OR IGNORE INTO venue_memberships (venue_id,user_id,role,approved)
+    SELECT id, ?, 'owner', 1 FROM venues WHERE name='Den Devine'`).run(denDevineAccount.id);
 }
 
 const gigCount = db.prepare('SELECT COUNT(*) count FROM gigs').get() as { count: number };

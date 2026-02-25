@@ -1,6 +1,7 @@
 import { getGig } from '@/lib/data';
 import Link from 'next/link';
 import { getSession } from '@/lib/auth';
+import { formatDateDDMMYYYY, formatTime } from '@/lib/format';
 
 export default async function GigPage({ params }: { params: Promise<{ id: string }> }) {
   const p = await params;
@@ -11,7 +12,7 @@ export default async function GigPage({ params }: { params: Promise<{ id: string
     <img src={gig.poster_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=1200'} alt={gig.artist_name} className='h-64 w-full rounded-2xl object-cover'/>
     <h1 className='text-3xl font-bold'>{gig.artist_name}</h1>
     <p>{gig.venue_name} · {gig.address}, {gig.suburb} {gig.postcode}</p>
-    <p>{gig.date} at {gig.start_time}</p>
+    <p>{formatDateDDMMYYYY(gig.date)} at {formatTime(gig.start_time, '12h')}</p>
     <p>{gig.price_type === 'Free' ? 'Free entry' : `Ticket price: $${Number(gig.ticket_price || 0).toFixed(2)}`}</p>
     <p>{gig.description}</p>
     <div className='flex gap-2'>{JSON.parse(gig.genres).map((x:string)=><span key={x} className='rounded bg-zinc-800 px-2 py-1'>{x}</span>)}</div>
