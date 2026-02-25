@@ -10,6 +10,30 @@ function redirectAfterAuth(role: string) {
   redirect('/');
 }
 
+const FALLBACK_GIG_DESCRIPTION = 'Details coming soon. This gig was submitted by the venue and will be updated shortly.';
+const FALLBACK_POSTER_URL = 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=1200';
+
+function createProvisionalVenue(formData: FormData, userId: number) {
+  const insertVenue = db.prepare(`INSERT INTO venues (name,abn,address,suburb,city,state,postcode,lat,lng,website,instagram,approved)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,0)`);
+  const createdVenue = insertVenue.run(
+    String(formData.get('venue_name') || '').trim(),
+    String(formData.get('abn') || '').trim(),
+    String(formData.get('address') || '').trim(),
+    String(formData.get('suburb') || '').trim(),
+    String(formData.get('city') || 'Gold Coast').trim(),
+    String(formData.get('state') || 'QLD').trim(),
+    String(formData.get('postcode') || '').trim(),
+    -28.0167,
+    153.4,
+    String(formData.get('website') || '').trim(),
+    String(formData.get('instagram') || '').trim(),
+  );
+  const venueId = Number(createdVenue.lastInsertRowid);
+  db.prepare('INSERT OR REPLACE INTO venue_memberships (venue_id,user_id,role,approved) VALUES (?,?,?,1)').run(venueId, userId, 'owner');
+  return venueId;
+}
+
 export async function registerAction(formData: FormData) {
   const email = String(formData.get('email') || '').trim().toLowerCase();
   const password = String(formData.get('password') || '');
@@ -24,9 +48,10 @@ export async function registerAction(formData: FormData) {
   if (!user) redirect('/login');
 
   if (role === 'venue_admin') {
+    const provisionalVenueId = createProvisionalVenue(formData, user.id);
     db.prepare(`INSERT INTO venue_requests
-      (requested_by_user_id,venue_name,abn,address,suburb,city,state,postcode,website,instagram,notes,status)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+      (requested_by_user_id,venue_name,abn,address,suburb,city,state,postcode,website,instagram,notes,provisional_venue_id,status)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
       user.id,
       String(formData.get('venue_name') || ''),
       String(formData.get('abn') || ''),
@@ -38,6 +63,7 @@ export async function registerAction(formData: FormData) {
       String(formData.get('website') || ''),
       String(formData.get('instagram') || ''),
       String(formData.get('notes') || ''),
+      provisionalVenueId,
       'pending',
     );
   }
@@ -46,8 +72,14 @@ export async function registerAction(formData: FormData) {
 }
 
 export async function loginAction(formData: FormData) {
-  const user = await signIn(String(formData.get('username') || ''), String(formData.get('password') || ''));
-  if (!user) redirect('/login');
+  const username = String(formData.get('username') || '');
+  const password = String(formData.get('password') || '');
+  const user = await signIn(username, password);
+  if (!user) {
+    const normalized = username.trim().toLowerCase();
+    const existing = db.prepare('SELECT id FROM users WHERE username=? OR email=?').get(normalized, normalized) as { id: number } | undefined;
+    redirect(existing ? '/login?error=wrong-password' : '/login?error=account-not-found');
+  }
   redirectAfterAuth(user.role);
 }
 
@@ -74,6 +106,10 @@ export async function createGigAction(formData: FormData) {
 
   const genres = formData.getAll('genres');
   const vibes = formData.getAll('vibe_tags');
+  const priceType = String(formData.get('price_type'));
+  const venue = db.prepare('SELECT approved FROM venues WHERE id=?').get(venueId) as { approved: number } | undefined;
+  const description = String(formData.get('description') || '').trim();
+  const posterUrl = String(formData.get('poster_url') || '').trim();
   db.prepare(`INSERT INTO gigs (venue_id,artist_name,date,start_time,end_time,price_type,ticket_price,ticket_url,description,genres,vibe_tags,poster_url,status,needs_review,created_by_user_id)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
     venueId,
@@ -81,14 +117,14 @@ export async function createGigAction(formData: FormData) {
     String(formData.get('date')),
     String(formData.get('start_time')),
     String(formData.get('end_time') || ''),
-    String(formData.get('price_type')),
-    Number(formData.get('ticket_price') || 0),
+    priceType,
+    priceType === 'Free' ? 0 : Number(formData.get('ticket_price') || 0),
     String(formData.get('ticket_url') || ''),
-    String(formData.get('description') || ''),
+    description || FALLBACK_GIG_DESCRIPTION,
     JSON.stringify(genres),
     JSON.stringify(vibes),
-    String(formData.get('poster_url') || ''),
-    'approved',
+    posterUrl || FALLBACK_POSTER_URL,
+    venue?.approved ? 'approved' : 'pending_venue_approval',
     1,
     session.id,
   );
@@ -99,9 +135,10 @@ export async function requestVenueAction(formData: FormData) {
   const session = await getSession();
   if (!session || session.role !== 'venue_admin') redirect('/login');
 
+  const provisionalVenueId = createProvisionalVenue(formData, session.id);
   db.prepare(`INSERT INTO venue_requests
-    (requested_by_user_id,venue_name,abn,address,suburb,city,state,postcode,website,instagram,notes,status)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+    (requested_by_user_id,venue_name,abn,address,suburb,city,state,postcode,website,instagram,notes,provisional_venue_id,status)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
     session.id,
     String(formData.get('venue_name') || ''),
     String(formData.get('abn') || ''),
@@ -113,10 +150,53 @@ export async function requestVenueAction(formData: FormData) {
     String(formData.get('website') || ''),
     String(formData.get('instagram') || ''),
     String(formData.get('notes') || ''),
+    provisionalVenueId,
     'pending',
   );
 
   redirect('/request-venue?request=sent');
+}
+
+export async function requestPasswordResetAction(formData: FormData) {
+  const identifier = String(formData.get('username') || '').trim().toLowerCase();
+  if (!identifier) redirect('/login?error=missing-identifier');
+  const user = db.prepare('SELECT id FROM users WHERE username=? OR email=?').get(identifier, identifier) as { id: number } | undefined;
+  db.prepare('INSERT INTO password_reset_requests (user_id,login_identifier,note) VALUES (?,?,?)').run(user?.id || null, identifier, 'Manual reset request from login page');
+  redirect('/login?reset=requested');
+}
+
+export async function updateGigDetailsAction(formData: FormData) {
+  const session = await getSession();
+  if (!session) redirect('/login');
+
+  const gigId = Number(formData.get('gig_id'));
+  const description = String(formData.get('description') || '').trim();
+  const posterUrl = String(formData.get('poster_url') || '').trim();
+  const priceType = String(formData.get('price_type') || 'Free');
+  db.prepare(`UPDATE gigs
+    SET artist_name=?, date=?, start_time=?, end_time=?, price_type=?, ticket_price=?, ticket_url=?, description=?, poster_url=?, updated_at=CURRENT_TIMESTAMP
+    WHERE id=? AND created_by_user_id=?`).run(
+    String(formData.get('artist_name') || ''),
+    String(formData.get('date') || ''),
+    String(formData.get('start_time') || ''),
+    String(formData.get('end_time') || ''),
+    priceType,
+    priceType === 'Free' ? 0 : Number(formData.get('ticket_price') || 0),
+    String(formData.get('ticket_url') || ''),
+    description || FALLBACK_GIG_DESCRIPTION,
+    posterUrl || FALLBACK_POSTER_URL,
+    gigId,
+    session.id,
+  );
+  redirect('/my-gigs?updated=1');
+}
+
+export async function updateTimeFormatAction(formData: FormData) {
+  const session = await getSession();
+  if (!session) redirect('/login');
+  const timeFormat = String(formData.get('time_format') || '12h') === '24h' ? '24h' : '12h';
+  db.prepare('UPDATE user_profiles SET time_format=?, updated_at=CURRENT_TIMESTAMP WHERE user_id=?').run(timeFormat, session.id);
+  redirect('/settings?saved=time-format');
 }
 
 export async function updateGigAction(formData: FormData) {
@@ -136,9 +216,25 @@ export async function adminReviewVenueRequestAction(formData: FormData) {
   if (!request) redirect('/admin');
 
   if (decision === 'approve') {
-    const venueInsert = db.prepare(`INSERT INTO venues (name,abn,address,suburb,city,state,postcode,lat,lng,website,instagram,approved)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,1)`);
-    const insertedVenue = venueInsert.run(
+    const venueId = request.provisional_venue_id
+      ? Number(request.provisional_venue_id)
+      : Number(db.prepare(`INSERT INTO venues (name,abn,address,suburb,city,state,postcode,lat,lng,website,instagram,approved)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,1)`).run(
+        request.venue_name,
+        request.abn,
+        request.address,
+        request.suburb,
+        request.city,
+        request.state,
+        request.postcode,
+        -28.0167,
+        153.4,
+        request.website,
+        request.instagram,
+      ).lastInsertRowid);
+    db.prepare(`UPDATE venues
+      SET name=?, abn=?, address=?, suburb=?, city=?, state=?, postcode=?, website=?, instagram=?, approved=1
+      WHERE id=?`).run(
       request.venue_name,
       request.abn,
       request.address,
@@ -146,13 +242,12 @@ export async function adminReviewVenueRequestAction(formData: FormData) {
       request.city,
       request.state,
       request.postcode,
-      -28.0167,
-      153.4,
       request.website,
       request.instagram,
+      venueId,
     );
-    const venueId = Number(insertedVenue.lastInsertRowid);
     db.prepare('INSERT OR REPLACE INTO venue_memberships (venue_id,user_id,role,approved) VALUES (?,?,?,1)').run(venueId, request.requested_by_user_id, 'owner');
+    db.prepare("UPDATE gigs SET status='approved', updated_at=CURRENT_TIMESTAMP WHERE venue_id=? AND status='pending_venue_approval'").run(venueId);
 
     const venueMaster = db.prepare("SELECT id FROM users WHERE username='venue' LIMIT 1").get() as { id: number } | undefined;
     if (venueMaster) {

@@ -1,0 +1,57 @@
+'use client';
+
+import { useMemo, useState } from 'react';
+import { createGigAction } from '@/app/actions';
+
+type Venue = { id: number; name: string; suburb: string; city: string; state: string; approved: number };
+
+export default function CreateGigForm({ venues, preferredVenueId, error, genres, vibes }: {
+  venues: Venue[];
+  preferredVenueId?: number;
+  error?: string;
+  genres: string[];
+  vibes: string[];
+}) {
+  const [priceType, setPriceType] = useState('Free');
+  const selectedVenue = useMemo(() => venues.find((v) => v.id === preferredVenueId) || venues[0], [venues, preferredVenueId]);
+
+  return (
+    <form action={createGigAction} className='space-y-4 rounded-xl border border-zinc-700 p-4'>
+      <h1 className='text-2xl font-bold'>Post a gig</h1>
+      <p className='text-sm text-zinc-400'>Share complete event details so fans can discover and attend your gig.</p>
+      {error === 'venue-permission' && <p className='rounded bg-amber-900/50 p-2 text-sm text-amber-200'>You can only post gigs for venues linked to your account.</p>}
+      {venues.length === 0 ? (
+        <p className='rounded bg-zinc-900 p-3 text-zinc-300'>No venues are linked to your account yet.</p>
+      ) : (
+        <>
+          <p className='text-sm text-zinc-400'>Venue / Location</p>
+          {venues.length === 1 ? (
+            <>
+              <div className='rounded border border-zinc-700 bg-zinc-900 p-3 text-sm'>
+                <p className='font-semibold'>{selectedVenue.name}</p>
+                <p className='text-zinc-400'>{selectedVenue.suburb}, {selectedVenue.city} {selectedVenue.state}</p>
+                {!selectedVenue.approved && <p className='mt-1 text-amber-300'>This venue is pending approval. Gig will auto-post once approved.</p>}
+              </div>
+              <input type='hidden' name='venue_id' value={selectedVenue.id} />
+            </>
+          ) : (
+            <select name='venue_id' required defaultValue={preferredVenueId && venues.some((v) => v.id === preferredVenueId) ? String(preferredVenueId) : undefined} className='w-full rounded bg-zinc-900 p-2'>
+              {venues.map((v) => <option key={v.id} value={v.id}>{v.name} ({v.suburb}){!v.approved ? ' · Pending approval' : ''}</option>)}
+            </select>
+          )}
+          <input name='artist_name' required placeholder='Artist/band name' className='w-full rounded bg-zinc-900 p-2'/>
+          <div className='grid grid-cols-2 gap-2'><input type='date' name='date' required className='rounded bg-zinc-900 p-2'/><input type='time' name='start_time' required className='rounded bg-zinc-900 p-2'/></div>
+          <input type='time' name='end_time' className='w-full rounded bg-zinc-900 p-2' placeholder='End time'/>
+          <select name='price_type' required value={priceType} onChange={(e) => setPriceType(e.target.value)} className='w-full rounded bg-zinc-900 p-2'><option>Free</option><option>Door</option><option>Ticketed</option></select>
+          {priceType !== 'Free' && <input type='number' min='0' step='0.01' name='ticket_price' required placeholder='Ticket price' className='w-full rounded bg-zinc-900 p-2'/>}
+          <input name='ticket_url' placeholder='Ticket link (optional)' className='w-full rounded bg-zinc-900 p-2'/>
+          <textarea name='description' placeholder='Description (optional)' className='w-full rounded bg-zinc-900 p-2'/>
+          <input name='poster_url' placeholder='Poster image URL (optional)' className='w-full rounded bg-zinc-900 p-2'/>
+          <fieldset><legend className='mb-1'>Genres</legend><div className='flex flex-wrap gap-2'>{genres.map((g) => <label key={g} className='rounded bg-zinc-800 px-2 py-1 text-sm'><input type='checkbox' name='genres' value={g} className='mr-1'/>{g}</label>)}</div></fieldset>
+          <fieldset><legend className='mb-1'>Vibe tags</legend><div className='flex flex-wrap gap-2'>{vibes.map((v) => <label key={v} className='rounded bg-fuchsia-900/50 px-2 py-1 text-sm'><input type='checkbox' name='vibe_tags' value={v} className='mr-1'/>{v}</label>)}</div></fieldset>
+          <button className='rounded bg-violet-600 px-4 py-2'>Publish gig</button>
+        </>
+      )}
+    </form>
+  );
+}
