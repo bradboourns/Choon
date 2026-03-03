@@ -1,9 +1,11 @@
 import db from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { redirect } from 'next/navigation';
+import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
   const session = await getSession();
+  const expectsJson = req.headers.get('accept')?.includes('application/json');
   if (!session) redirect('/login');
 
   const data = await req.formData();
@@ -12,6 +14,7 @@ export async function POST(req: Request) {
   const redirectTo = String(data.get('redirect_to') || '/');
 
   if (!gigId || !['interested', 'going', 'none'].includes(status)) {
+    if (expectsJson) return NextResponse.json({ ok: false }, { status: 400 });
     redirect(redirectTo);
   }
 
@@ -24,5 +27,6 @@ export async function POST(req: Request) {
       DO UPDATE SET status = excluded.status, updated_at = CURRENT_TIMESTAMP`).run(session.id, gigId, status);
   }
 
+  if (expectsJson) return NextResponse.json({ ok: true, status });
   redirect(redirectTo);
 }
