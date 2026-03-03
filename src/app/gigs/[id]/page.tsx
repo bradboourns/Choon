@@ -4,7 +4,7 @@ import { getSession } from '@/lib/auth';
 import { formatDateDDMMYYYY, formatTime } from '@/lib/format';
 import db from '@/lib/db';
 import { updateGigDetailsAction } from '@/app/actions';
-import GigShareActions from '@/components/GigShareActions';
+import GigInterestButtons from '@/components/GigInterestButtons';
 
 export default async function GigPage({ params }: { params: Promise<{ id: string }> }) {
   const p = await params;
@@ -110,24 +110,7 @@ export default async function GigPage({ params }: { params: Promise<{ id: string
           {isSaved ? 'Saved' : 'Save gig'}
         </button>
       </form>
-      <form action='/api/gig-interest' method='post'>
-        <input type='hidden' name='gig_id' value={gig.id}/>
-        <input type='hidden' name='status' value={interest === 'interested' ? 'none' : 'interested'} />
-        <input type='hidden' name='redirect_to' value={`/gigs/${gig.id}`} />
-        <button className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 font-medium ${interest === 'interested' ? 'bg-violet-600 text-white' : 'border border-zinc-600 text-zinc-100'}`}>
-          <svg aria-hidden viewBox='0 0 24 24' className='h-4 w-4 fill-none stroke-current stroke-2'><path d='m12 3 2.8 5.6 6.2.9-4.5 4.4 1.1 6.1L12 17.2 6.4 20l1.1-6.1L3 9.5l6.2-.9L12 3Z' /></svg>
-          {interest === 'interested' ? 'Interested' : 'Mark interested'}
-        </button>
-      </form>
-      <form action='/api/gig-interest' method='post'>
-        <input type='hidden' name='gig_id' value={gig.id}/>
-        <input type='hidden' name='status' value={interest === 'going' ? 'none' : 'going'} />
-        <input type='hidden' name='redirect_to' value={`/gigs/${gig.id}`} />
-        <button className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 font-medium ${interest === 'going' ? 'bg-emerald-600 text-white' : 'border border-zinc-600 text-zinc-100'}`}>
-          <svg aria-hidden viewBox='0 0 24 24' className='h-4 w-4 fill-none stroke-current stroke-2'><path d='m5 12 4 4L19 6' /></svg>
-          {interest === 'going' ? 'Going' : 'Mark going'}
-        </button>
-      </form>
+      <GigInterestButtons gigId={gig.id} initialStatus={interest as 'interested' | 'going' | 'none'} />
       {gig.artist_id && <form action='/api/follow-artist' method='post'>
         <input type='hidden' name='artist_id' value={gig.artist_id} />
         <input type='hidden' name='follow' value={followsArtist ? '0' : '1'} />
@@ -156,10 +139,9 @@ export default async function GigPage({ params }: { params: Promise<{ id: string
           Tickets
         </a>
       )}
-      <div className='mt-4 flex flex-wrap gap-2'>
-        <a className='rounded-xl border border-zinc-600 px-4 py-2' href={`https://maps.google.com/?q=${encodeURIComponent(`${gig.address}, ${gig.suburb}, ${gig.city}`)}`}>Get directions</a>
+      <div className='mt-4'>
+        <Link href={`/venues/${gig.venue_id}`} className='inline-flex rounded-xl border border-zinc-600 px-4 py-2 hover:bg-zinc-800'>View venue profile</Link>
       </div>
-      <GigShareActions gigId={gig.id} artistName={gig.artist_name} venueName={gig.venue_name} />
     </section>
   </article>;
 }
