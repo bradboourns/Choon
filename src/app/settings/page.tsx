@@ -23,7 +23,7 @@ export default async function SettingsPage() {
       <section className='rounded-2xl border border-zinc-700 bg-zinc-900/50 p-4'>
         <h2 className='text-lg font-semibold'>Account</h2>
         <p className='mt-2 text-zinc-300'>Username: {session.username}</p>
-        <p className='text-zinc-300'>Role: {session.role}</p>
+        <p className='text-zinc-300'>Role: {session.role === 'artist' ? 'artist (beta)' : session.role === 'venue_admin' ? 'venue admin (coming soon)' : session.role === 'admin' ? 'platform admin (coming soon)' : session.role}</p>
       </section>
       <section className='rounded-2xl border border-zinc-700 bg-zinc-900/50 p-4'>
         <h2 className='text-lg font-semibold'>Profile details</h2>

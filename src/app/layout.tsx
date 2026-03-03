@@ -12,8 +12,8 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const canPostGig = session?.role === 'artist' || session?.role === 'venue_admin';
   const roleLabel: Record<string, string> = {
     admin: 'Platform admin',
-    artist: 'Artist',
-    venue_admin: 'Venue',
+    artist: 'Artist (beta)',
+    venue_admin: 'Venue (coming soon)',
     user: 'Music fan',
   };
 
@@ -36,7 +36,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
               {session?.role === 'user' && <Link href="/" className="rounded-full border border-zinc-700 px-3 py-1.5 hover:bg-zinc-900">Find choons</Link>}
               {session?.role === 'user' && <Link href="/saved" className="inline-flex items-center gap-1.5 rounded-full border border-zinc-700 px-3 py-1.5 hover:bg-zinc-900"><svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4 fill-none stroke-current stroke-2"><path d="M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1Z" /></svg> Saved</Link>}
               {session ? (
-                <AccountMenu canPostGig={canPostGig} isVenueAdmin={session.role === 'venue_admin'} username={session.username} />
+                <AccountMenu canPostGig={canPostGig} isVenueAdmin={session.role === 'venue_admin'} username={session.username} role={session.role as 'admin' | 'artist' | 'venue_admin' | 'user'} />
               ) : (
                 <>
                   <Link href="/login" className="rounded-full border border-zinc-700 px-3 py-1.5 hover:bg-zinc-900">Log in</Link>

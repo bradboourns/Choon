@@ -7,9 +7,9 @@ import { formatDateDDMMYYYY, formatTime } from '@/lib/format';
 type RoleType = 'admin' | 'artist' | 'venue_admin' | 'user';
 
 const roleLabel: Record<RoleType, string> = {
-  admin: 'Platform admin',
-  artist: 'Artist',
-  venue_admin: 'Venue',
+  admin: 'Platform admin (coming soon)',
+  artist: 'Artist (beta)',
+  venue_admin: 'Venue (coming soon)',
   user: 'Fan',
 };
 
