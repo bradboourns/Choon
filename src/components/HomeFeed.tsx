@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { formatDateDDMMYYYY, formatTime } from '@/lib/format';
 import GigInterestButtons from '@/components/GigInterestButtons';
+import SaveGigButton from '@/components/SaveGigButton';
+import FollowArtistButton from '@/components/FollowArtistButton';
 
 const GigMap = dynamic(() => import('./GigMap'), { ssr: false });
 const defaultMapCenter = { lat: -28.0167, lng: 153.4 };
@@ -257,20 +259,10 @@ export default function HomeFeed({ initial, isLoggedIn, savedGigIds, interestByG
                   <a className="inline-flex items-center gap-1.5 rounded border border-zinc-600 px-2.5 py-1.5 hover:bg-zinc-800" href={`https://maps.google.com/?q=${encodeURIComponent(`${g.address}, ${g.suburb}, ${g.city}`)}`} target="_blank" rel="noreferrer"><Icon path='M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z M12 10h.01' />Directions</a>
                   {isLoggedIn ? (
                     <>
-                      <form action="/api/save" method="post">
-                        <input type="hidden" name="gig_id" value={g.id} />
-                        <input type="hidden" name="action" value={saved ? 'unsave' : 'save'} />
-                        <input type="hidden" name="redirect_to" value="/" />
-                        <button className="inline-flex items-center gap-1.5 rounded border border-zinc-600 px-2.5 py-1.5 hover:bg-zinc-800"><Icon path='M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1Z' />{saved ? 'Saved' : 'Save gig'}</button>
-                      </form>
+                      <SaveGigButton gigId={g.id} initiallySaved={saved} compact />
                       <GigInterestButtons gigId={g.id} initialStatus={interest as 'interested' | 'going' | 'none'} compact />
                       {g.artist_id && (
-                        <form action="/api/follow-artist" method="post">
-                          <input type="hidden" name="artist_id" value={g.artist_id} />
-                          <input type="hidden" name="follow" value={followingArtist ? '0' : '1'} />
-                          <input type="hidden" name="redirect_to" value="/" />
-                          <button className={`inline-flex items-center gap-1.5 rounded border px-2.5 py-1.5 ${followingArtist ? 'border-fuchsia-400 bg-fuchsia-500/20' : 'border-zinc-600 hover:bg-zinc-800'}`}><Icon path='M12 5v14M5 12h14' />{followingArtist ? 'Following artist' : 'Follow artist'}</button>
-                        </form>
+                        <FollowArtistButton artistId={g.artist_id} initiallyFollowing={followingArtist} compact />
                       )}
                     </>
                   ) : (

@@ -2,6 +2,7 @@ import db from '@/lib/db';
 import Link from 'next/link';
 import { getSession } from '@/lib/auth';
 import { formatDateDDMMYYYY, formatTime } from '@/lib/format';
+import FollowVenueButton from '@/components/FollowVenueButton';
 
 export default async function VenueInfoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -39,16 +40,9 @@ export default async function VenueInfoPage({ params }: { params: Promise<{ id: 
         <p className='text-zinc-300'>{venue.address}, {venue.suburb} {venue.state} {venue.postcode}</p>
         {venue.website && <a href={venue.website} className='text-violet-300 hover:text-violet-200'>Venue website</a>}
       </div>
-      {session && !isOwnVenueAccount && <form action='/api/follow-venue' method='post' className='sticky right-0 top-24'>
-        <input type='hidden' name='venue_id' value={venue.id} />
-        <input type='hidden' name='follow' value={followsVenue ? '0' : '1'} />
-        <input type='hidden' name='redirect_to' value={`/venues/${venue.id}`} />
-        <button aria-label={followsVenue ? 'Unfollow venue' : 'Follow venue'} className='inline-flex items-center gap-2 rounded-full border border-zinc-600 bg-zinc-900/80 px-4 py-2 text-sm hover:border-violet-400'>
-          <svg aria-hidden viewBox='0 0 24 24' className='h-4 w-4 fill-none stroke-current stroke-2'><path d='M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z' /><circle cx='12' cy='10' r='2.5' /></svg>
-          <svg aria-hidden viewBox='0 0 24 24' className='h-4 w-4 fill-none stroke-current stroke-2'><path d='M8 10h8M12 6v8' /><path d='M5 18c2-2 4-3 7-3s5 1 7 3' /></svg>
-          {followsVenue ? 'Following' : 'Follow'}
-        </button>
-      </form>}
+      {session && !isOwnVenueAccount && <div className='sticky right-0 top-24'>
+        <FollowVenueButton venueId={venue.id} initiallyFollowing={followsVenue} />
+      </div>}
       {!session && <div className='sticky right-0 top-24 rounded-xl border border-violet-500/30 bg-violet-900/20 p-3'>
         <p className='text-xs text-violet-100'>Search is free. Create an account to follow this venue and track your interests.</p>
         <div className='mt-2 flex gap-2'>

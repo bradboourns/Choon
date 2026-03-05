@@ -5,6 +5,8 @@ import { formatDateDDMMYYYY, formatTime } from '@/lib/format';
 import db from '@/lib/db';
 import { updateGigDetailsAction } from '@/app/actions';
 import GigInterestButtons from '@/components/GigInterestButtons';
+import SaveGigButton from '@/components/SaveGigButton';
+import FollowArtistButton from '@/components/FollowArtistButton';
 
 export default async function GigPage({ params }: { params: Promise<{ id: string }> }) {
   const p = await params;
@@ -101,25 +103,9 @@ export default async function GigPage({ params }: { params: Promise<{ id: string
     </section>
 
     {session && <section className='flex flex-wrap gap-2'>
-      <form action='/api/save' method='post'>
-        <input type='hidden' name='gig_id' value={gig.id}/>
-        <input type='hidden' name='action' value={isSaved ? 'unsave' : 'save'} />
-        <input type='hidden' name='redirect_to' value={`/gigs/${gig.id}`} />
-        <button className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 font-medium ${isSaved ? 'bg-zinc-100 text-zinc-900' : 'border border-zinc-600 text-zinc-100'}`}>
-          <svg aria-hidden viewBox='0 0 24 24' className='h-4 w-4 fill-none stroke-current stroke-2'><path d='M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1Z' /></svg>
-          {isSaved ? 'Saved' : 'Save gig'}
-        </button>
-      </form>
+      <SaveGigButton gigId={gig.id} initiallySaved={isSaved} />
       <GigInterestButtons gigId={gig.id} initialStatus={interest as 'interested' | 'going' | 'none'} />
-      {gig.artist_id && <form action='/api/follow-artist' method='post'>
-        <input type='hidden' name='artist_id' value={gig.artist_id} />
-        <input type='hidden' name='follow' value={followsArtist ? '0' : '1'} />
-        <input type='hidden' name='redirect_to' value={`/gigs/${gig.id}`} />
-        <button className='inline-flex items-center gap-1.5 rounded-xl border border-zinc-600 px-4 py-2'>
-          <svg aria-hidden viewBox='0 0 24 24' className='h-4 w-4 fill-none stroke-current stroke-2'><circle cx='9' cy='8' r='3' /><path d='M4 19c1.5-3 3.8-5 6.5-5' /><path d='M16 7v8M12 11h8' /></svg>
-          {followsArtist ? 'Following artist' : 'Follow artist'}
-        </button>
-      </form>}
+      {gig.artist_id && <FollowArtistButton artistId={gig.artist_id} initiallyFollowing={followsArtist} />}
     </section>}
     {!session && <section className='rounded-2xl border border-violet-500/30 bg-violet-900/20 p-4'>
       <p className='text-sm text-violet-100'>Searching is totally free. Create an account if you want to save this gig, mark interest, or follow the venue so Choon can track it for you.</p>
